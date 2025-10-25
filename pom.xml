@@ -1,0 +1,258 @@
+<!-- 📌📌📌 配置&依賴管理 📌📌📌-->
+<!-- 📌📌 依賴管理 📌📌-->
+<!-- 📌第1層: 版本 (統一)管理📌 -->
+<!--1️⃣ 繼承 spring-boot-starter-parent  v3.3.0 -->
+<!--       <🔦> 簡化配置: 因多數依賴 有預設兼容版本號 <->避版本衝突 -->
+<!--       <細節:底層> Parent 內含 spring-boot-dependencies (BOM) ，BOM 會定義版本  -->
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.0</version>
+    <relativePath />
+</parent>
+<!-- 2️⃣ 保留配置彈性: 因第三方工具可用 properties 覆蓋預設版本號 -->
+<!--                 <😄> 好維護: 因所有版本號 統一定義在檔案最上方，更版時不漏改 -->
+<properties>
+    <java.version>17</java.version>
+    <!-- 🔦 Spring Boot 根據版本設定，編譯和打包 
+            (是 Spring Boot 的特殊 property，自動設定 maven.compiler.source 和 target)-->
+    <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
+    <!-- 🔦 讓 <dependencies> 和 <annotationProcessorPaths> 引用指定版本 -->
+    <lombok.version>1.18.32</lombok.version>
+    <!-- 🔦 覆蓋 Spring Boot parent 預設的 Lombok 版本 ，因對 Java 17 支援更好 -->
+</properties>
+<!-- 📌第2層: 依賴管理📌 -->
+<!-- 1️⃣ Spring 官方依賴 (💻 Maven無順序要求 ，可自性按功能分層來組織依賴)-->
+<!--    (🏷️核心依賴: 不須單獨引入) -->
+<!--     🏷️ Web層 -->
+<!--        spring-boot-starter-web -->
+<!--        <🟰組合依賴> Spring MVC 模組 + Tomcat -->
+<!-- 🔦 開發RESTful API-->
+<!--        <⚙️> 排除 內建預設Tomcat -->
+<!--              改用 provided scope，支援外部Tomcat部署 -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-tomcat</artifactId>
+    <scope>provided</scope>
+</dependency>
+<!--     🏷️  資料層 -->
+<!--          ✍️  spring-boot-starter-data-jpa -->
+<!--                  <🟰組合依賴> Spring Data JPA + Hibernate -->
+<!--                  <🔦> ORM -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+<!--          ✍️  spring-boot-starter-data-redis -->
+<!--                  <🟰組合依賴> spring-data-redis + lettuce-core -->
+<!--                  <🔦> Redis 資料操作，如快取 -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+<!--          ✍️   spring-session-data-redis-->
+<!--                  <🟰組合依賴>  ❌ 無starter，僅單模組-->
+<!--                  <🔦> Session 儲存管理，如 用於 OAuth2 登入後的 Session 共享 -->
+<dependency>
+    <groupId>org.springframework.session</groupId>
+    <artifactId>spring-session-data-redis</artifactId>
+</dependency>
+<!--     🏷️  安全層 -->
+<!--          ✍️   spring-boot-starter-security -->
+<!--                  <🟰組合依賴>  spring-security-web + spring-security-config -->
+<!--                  <🔦> 身分認證  -> 授權 -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+<!--          ✍️   spring-boot-starter-oauth2-client -->
+<!--                  <🟰組合依賴> spring-security-oauth2 + nimbus-jose-jwt-->
+<!--                  <🔦>  OAuth2 客戶端操作 -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-oauth2-client</artifactId>
+</dependency>
+<!--     🏷️  測試 -->
+<!--          ✍️   spring-boot-starter-test -->
+<!--                  <🟰組合依賴>  junit-jupiter + mockito + spring-test-->
+<!--          ✍️   spring-security-test -->
+<!--                  <🟰組合依賴> ❌ -->
+<!--     🏷️  開發工具 -->
+<!--          ✍️  spring-boot-devtools -->
+<!--                  <🟰組合依賴>  -->
+<!--                  <🔦> 熱部署工具，開發階段自動重啟-->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-devtools</artifactId>
+    <scope>runtime</scope>
+    <optional>true</optional>
+</dependency>
+<!--          ✍️  spring-boot-configuration-processor -->
+<!--                  <🔦> 配置屬性元數據生成器，IDE 自動完成 -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-configuration-processor</artifactId>
+    <optional>true</optional>
+</dependency>
+<!--     🏷️  驗證 -->
+<!--          ✍️  spring-boot-starter-validation -->
+<!--                  <🟰組合依賴>  hibernate-validator -->
+<!--                  <🔦>  Bean Validation，如 DTO 參數驗證-->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-validation</artifactId>
+</dependency>
+<!--     🏷️  監控與運維層 -->
+<!--          ✍️ spring-boot-starter-actuator -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+<!--     🏷️  其它 -->
+<!--          ✍️   spring-boot-starter-mail -->
+<!--                  <🔦> 發送 email -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-mail</artifactId>
+</dependency>
+<!-- 2️⃣ 第三方  依賴整合 -->
+<!--     🏷️  Jakarta EE 規範-->
+<!--          ✍️ jakarta.servlet-api -->
+<!--                  <🔦>  Servlet API ，編譯時需要<->執行時由容器提供-->
+<dependency>
+    <groupId>jakarta.servlet</groupId>
+    <artifactId>jakarta.servlet-api</artifactId>
+    <scope>provided</scope>
+</dependency>
+<!--     🏷️ 資料庫驅動 -->
+<!--          ✍️ mssql-jdbc -->
+<!--                  <🔦> Microsoft SQL Server JDBC Driver，驅動 MS SQL-->
+<dependency>
+    <groupId>com.microsoft.sqlserver</groupId>
+    <artifactId>mssql-jdbc</artifactId>
+    <scope>runtime</scope>
+</dependency>
+<!--     🏷️ 開發效率 ❗Annotation Processor 順序: 必lombook 優先 -->
+<!--          ✍️ lombok -->
+<!--                  <🔦> 減少 樣板程式碼，如 getter、setter、constructior -->
+<dependency>
+    <groupId>org.projectlombok</groupId>
+    <artifactId>lombok</artifactId>
+    <optional>true</optional>
+</dependency>
+<!--          ✍️ mapstruct -->
+<!--                  <🔦>  自動 物件轉換映射-->
+<dependency>
+    <groupId>org.mapstruct</groupId>
+    <artifactId>mapstruct</artifactId>
+    <version>${org.mapstruct.version}</version>
+</dependency>
+<!--     🏷️  JWT 認證 -->
+<!--          ✍️ jjwt-api -->
+<!--                  <🔦> JWT API，編譯時需要-->
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-api</artifactId>
+    <version>0.11.5</version>
+</dependency>
+<!--          ✍️ jjwt-impl-->
+<!--                  <🔦>  JWT 實作， 執行時需要-->
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-impl</artifactId>
+    <version>0.11.5</version>
+    <scope>runtime</scope>
+</dependency>
+<!--          ✍️ jjwt-jackson-->
+<!--                  <🔦> JWT JSON 處理，執行時需要-->
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-jackson</artifactId>
+    <version>0.11.5</version>
+    <scope>runtime</scope>
+</dependency>
+<!--     🏷️ 第三方服務整合 -->
+<!--          ✍️ PayPal SDK -->
+<!--                  <🔦>  支付整合-->
+<dependency>
+    <groupId>com.paypal.sdk</groupId>
+    <artifactId>rest-api-sdk</artifactId>
+    <version>1.14.0</version>
+</dependency>
+<!-- 📌📌 打包&建構 管理📌📌-->
+<!--         <🔦> finalName，自定義 打包檔名 <->❌ 覆蓋 預設artifactId-version命名格式 -->
+<finalName>onlineShop</finalName>
+<!--     🏷️ 插件: maven-war-plugin -->
+<!--         <🔦>  打包 WAR 檔，允沒有 web.xml <-> 因Spring Boot 使用 Java Config-->
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-war-plugin</artifactId>
+    <version>3.3.2</version>
+    <configuration>
+        <failOnMissingWebXml>false</failOnMissingWebXml>
+    </configuration>
+</plugin>
+<!--     🏷️ 插件: ✨maven-compiler-plugin -->
+<!--         <🔦> 編譯期的 Annotation Processing（註解處理），指名處理順序&依賴關係 避衝突 -->
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <configuration>
+        <annotationProcessorPaths>
+            <path>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-configuration-processor</artifactId>
+            </path>
+            <!--         <🔦> 生成 application.properties 的 metadata，提供 IDE 自動完成功能 -->
+            <path>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </path>
+            <!--         <🔦> 編譯時生成 getter/setter 等樣板代碼 -->
+            <path>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-mapstruct-binding</artifactId>
+                <version>0.2.0</version>
+            </path>
+            <!--         <🔦> 解決 Lombok 和 MapStruct 的相容性問題-->
+            <path>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${org.mapstruct.version}</version>
+            </path>
+            <!--         <🔦> 生成物件映射的實作代碼-->
+        </annotationProcessorPaths>
+    </configuration>
+</plugin>
+<!--     🏷️ 插件:  ✨ spring-boot-maven-plugin-->
+<!--         <🔦>  打包成可執行的 fat jar/war檔、內嵌 Tomcat 等容器-->
+<plugin>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-maven-plugin</artifactId>
+    <configuration>
+        <excludes>
+            <exclude>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+            </exclude>
+            <!-- <🔦> 打包時排除 Lombok，因執行期不需要-->
+        </excludes>
+    </configuration>
+</plugin>
+<!--     🏷️ 插件: native-maven-plugin -->
+<!--         <🔦> 支援 GraalVM Native Image 編譯，將 Spring Boot 應用編譯成原生執行檔，啟動速度更快、記憶體佔用更小 -->
+<plugin>
+    <groupId>org.graalvm.buildtools</groupId>
+    <artifactId>native-maven-plugin</artifactId>
+</plugin>
