@@ -6,8 +6,8 @@
 */
 
 @Configuration
-// 🔦 Spring 容器啟動階段- 在 ApplicationContext 初始化時被掃描
-// 💻 ➕@Bean- 手動註冊Bean (序: 不照 定義順序 <-> 取決 依賴關係)
+// <🔦> Spring 容器啟動階段- 在 ApplicationContext 初始化時被掃描
+//  💻 ➕@Bean- 手動註冊Bean (序: 不照 定義順序 <-> 取決 依賴關係)
 
 @RequiredArgsConstructor // ➕可選 
 /*🔦Lombok → 自動生成 含特定參數的建構子
@@ -59,6 +59,7 @@ public class ApplicationConfig {
 }
 
 // ===== 2️⃣ 常建API前，定義安全核心: SecurityConfig.java =====
+// 設定 一個應用 AOP 思想的安全框架  (定義規則 被以APO方式應用)
 
 @Configuration
 @RequiredArgsConstructor
@@ -187,6 +188,7 @@ public class SecurityConfig {
 }
 
 // ===== 3️⃣ Web 層的通用配置: WebConfig.java =====
+// 設定 一個應用 AOP 思想的Web框架 (定義規則 被以APO方式應用)
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
