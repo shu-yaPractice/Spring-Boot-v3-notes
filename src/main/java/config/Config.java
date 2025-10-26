@@ -101,7 +101,7 @@ public class SecurityConfig {
                         // 💡 停用時機: 身分認證 依賴 JWT，不依賴 Session Cookie
                         .sessionManagement(session -> session
                                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                        /* 💡 參數 IF_REQUIRED: Spring Security 需要時才建Session (暫存 OAuth2 狀態)
+                        /* 💡 參數 IF_REQUIRED: Spring Security 需要時才建Session // 💡兼容 支援有狀態的 OAuth2 登入流程 + 無狀態的 JWT API 請求
                                   STATELESS：完全不建立 Session（純 JWT API ) 
                                   ALWAYS：每次請求都建立 <-> NEVER：不主動建立，但用既有的
                         */
@@ -119,7 +119,9 @@ public class SecurityConfig {
                         // 🔦 處理「未認證」異常  e.g. JWT token 無效or過期、請求需認證但未夾帶token、JwtFilter 認證失敗
                         // 自定義回傳 JSON (因無狀態 API) (<->適合傳統 Web: 預設重導向登入頁)
                         .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                        // 🔦 執行期，把 jwtFilter 加在 指定對象前 (如 Spring Security 標準認證流程)
+                        /* 🔦 <在Filter Chain位置> 執行期，把 jwtFilter 加在 指定對象前
+                                                                        (如 Spring Security 標準認證流程 ，e.g. 傳統表單登入) 
+                                                                        (Token-based Authentication，若  API Token 有效則立即完成認證 😄 API 的無狀態性 + 效率)*/
                         .authorizeHttpRequests(authorize -> authorize  // Lambda 參數
                                         .requestMatchers(API_PUBLIC_ALL).permitAll()
                                         // 定義 公開端點 -> 規則: 跳過認證 
@@ -138,9 +140,22 @@ public class SecurityConfig {
                 */
         }
 
+        // <🔦> 禁用自動註冊 <-> 確保 jwt filter 只在 Spring Security 註冊1次
+        @Bean
+        public FilterRegistrationBean<JwtFilter> jwtFilterRegistration(JwtFilter jwtFilter) {
+                FilterRegistrationBean<JwtFilter> registration = new FilterRegistrationBean<>(jwtFilter);
+        
+                registration.setEnabled(false);
+                
+                return registration;
+        }
+
         /*
         支援
         */
+
+        // <🔦>  提供 CORS 配置 給 CORS Filter
+        // <⏰>  在  Spring Security 最前面 過濾跨域請求
         @Bean
         CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration config = new CorsConfiguration();
@@ -158,18 +173,18 @@ public class SecurityConfig {
 
                 return source;
         }
-        // <🔦>  提供 CORS 配置 給 CORS Filter
-        // <⏰>  在  Spring Security 最前面 過濾跨域請求
 
+        // <🔦> 負責認證邏輯
+        // 詳: 委派給內部的 AuthenticationProvider 鏈驗證。Provider 檢查 token 或憑證，驗證成功: 回傳 Authentication 物件 <->失敗: 拋錯 AuthenticationException
+        // <⏰> 需要驗證時主動調用 (e.g. OAuth2)
         @Bean
         public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
                         throws Exception {
                 return authenticationConfiguration.getAuthenticationManager();
         }
-        // <🔦> 負責認證邏輯
-        // 詳: 委派給內部的 AuthenticationProvider 鏈驗證。Provider 檢查 token 或憑證，驗證成功: 回傳 Authentication 物件 <->失敗: 拋錯 AuthenticationException
-        // <⏰> 需要驗證時主動調用 (e.g. OAuth2)
 
+        // <🔦>  處理 認證失敗後的 統一回應格式
+        // <⏰>  認證失敗後被，動觸發回傳 401
         @Bean
         public AuthenticationEntryPoint customAuthenticationEntryPoint() {
                 return (request, response, authException) -> {
@@ -183,13 +198,13 @@ public class SecurityConfig {
                         response.getWriter().write(jsonResponse);
                 };
         }
-        // <🔦>  處理 認證失敗後的 統一回應格式
-        // <⏰>  認證失敗後被，動觸發回傳 401
 }
 
 // ===== 3️⃣ Web 層的通用配置: WebConfig.java =====
 // 設定 一個應用 AOP 思想的Web框架 (定義規則 被以APO方式應用)
 
+// <🔦> Spring MVC 的配置類，註冊 自定義的類型轉換器。
+// <💡> Controller 的方法參數 需接收 enum類型，Spring 自動調用 Converter 進行類型轉換
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
@@ -199,10 +214,23 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addConverter(new StringToSortDirectionConverter());
     }
 }
-// <🔦> Spring MVC 的配置類，註冊 自定義的類型轉換器。
-// <💡> Controller 的方法參數 需接收 enum類型，Spring 自動調用 Converter 進行類型轉換
 
 // ===== 4️⃣ 專屬配置: RedisSessionConfig.java =====
+
+// <🔦> 分散式 session 管理: Spring Session 的儲存機制 從本地記憶體 切換到 Redis
+/* <💡> 1.微服務架構 / 多實例部署
+        多台 server 共享 session（Load Balancer 後的水平擴展），避 sticky session 的負載不均
+
+        2.前後端分離的跨域架構
+        前端（www.example.com）和後端 API（api.example.com）需共享登入狀態
+        sameSite="None" 配合 CORS 實現跨域認證
+
+        3.高併發電商系統
+        購物車、結帳流程需穩定的 session，Redis 的高效能避免 DB 壓力
+
+        4.需 session 持久化
+        伺服器重啟後 session 不遺失、實現 session 的集中管理與監控
+*/
 @Configuration
 @EnableRedisHttpSession(maxInactiveIntervalInSeconds = 1800)
 public class RedisSessionConfig {
@@ -221,17 +249,3 @@ public class RedisSessionConfig {
         return serializer;
     }
 }
-// <🔦> 分散式 session 管理: Spring Session 的儲存機制 從本地記憶體 切換到 Redis
-/* <💡> 1.微服務架構 / 多實例部署
-        多台 server 共享 session（Load Balancer 後的水平擴展），避 sticky session 的負載不均
-
-        2.前後端分離的跨域架構
-        前端（www.example.com）和後端 API（api.example.com）需共享登入狀態
-        sameSite="None" 配合 CORS 實現跨域認證
-
-        3.高併發電商系統
-        購物車、結帳流程需穩定的 session，Redis 的高效能避免 DB 壓力
-
-        4.需 session 持久化
-        伺服器重啟後 session 不遺失、實現 session 的集中管理與監控
-*/

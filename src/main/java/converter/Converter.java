@@ -1,5 +1,7 @@
 // ===== 💻 Code template: Converter.java =====
 
+// <🔦> 請求參數的型別(String) -自動轉換成-> Enum型別
+// <⏰> Controller 接收 @RequestParam 或 @PathVariable
 @Component
 public class StringToEnumNameConverter implements Converter<String, EnumName> {
                                                 // 泛型介面<S (source type), T (轉換成target type)>
@@ -16,5 +18,3 @@ public class StringToEnumNameConverter implements Converter<String, EnumName> {
         }
     }
 }
-// <🔦> 請求參數的型別(String) -自動轉換成-> Enum型別
-// <⏰> Controller 接收 @RequestParam 或 @PathVariable
